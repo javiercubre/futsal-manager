@@ -1,4 +1,4 @@
-import { ReactNode, useMemo } from 'react';
+import { ReactNode, useMemo, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useGameStore } from '@/store/gameStore';
@@ -21,12 +21,15 @@ const Icons = {
   Settings: () => <span className="text-lg">⚙️</span>,
   Play: () => <span className="text-lg">▶️</span>,
   Pause: () => <span className="text-lg">⏸️</span>,
+  Menu: () => <span className="text-xl">☰</span>,
+  Close: () => <span className="text-xl">✕</span>,
 };
 
 export default function GameLayout({ children }: GameLayoutProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { playerTeam, playerTeamId, currentDate, managerName, competitions, advanceDay } = useGameStore();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Check if there's a match today that hasn't been played
   const todaysMatch = useMemo((): (Fixture & { competitionId: string }) | null => {
@@ -79,32 +82,60 @@ export default function GameLayout({ children }: GameLayoutProps) {
     { path: '/game/finances', label: t('menu.finances'), Icon: Icons.Finances },
   ];
 
+  // Close sidebar when navigating on mobile
+  const handleNavClick = () => {
+    setSidebarOpen(false);
+  };
+
   return (
     <div className="flex h-screen">
+      {/* Mobile overlay backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 bg-slate-800 flex flex-col">
+      <aside
+        className={clsx(
+          'fixed lg:static inset-y-0 left-0 z-50 w-64 bg-slate-800 flex flex-col transform transition-transform duration-300 ease-in-out',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        )}
+      >
         {/* Team header */}
         <div className="p-4 border-b border-slate-700">
-          <div className="flex items-center gap-3">
-            <div
-              className="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold text-lg"
-              style={{ backgroundColor: playerTeam?.colors.primary || '#3b82f6' }}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div
+                className="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold text-lg"
+                style={{ backgroundColor: playerTeam?.colors.primary || '#3b82f6' }}
+              >
+                {playerTeam?.abbreviation || 'FM'}
+              </div>
+              <div>
+                <h2 className="font-semibold text-white">{playerTeam?.name || 'No Team'}</h2>
+                <p className="text-sm text-slate-400">{managerName}</p>
+              </div>
+            </div>
+            {/* Close button for mobile */}
+            <button
+              className="lg:hidden p-2 text-slate-400 hover:text-white"
+              onClick={() => setSidebarOpen(false)}
             >
-              {playerTeam?.abbreviation || 'FM'}
-            </div>
-            <div>
-              <h2 className="font-semibold text-white">{playerTeam?.name || 'No Team'}</h2>
-              <p className="text-sm text-slate-400">{managerName}</p>
-            </div>
+              <Icons.Close />
+            </button>
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-2 space-y-1">
+        <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
           {navItems.map(({ path, label, Icon }) => (
             <NavLink
               key={path}
               to={path}
+              onClick={handleNavClick}
               className={({ isActive }) =>
                 clsx('sidebar-item', isActive && 'active')
               }
@@ -119,7 +150,10 @@ export default function GameLayout({ children }: GameLayoutProps) {
         <div className="p-2 border-t border-slate-700">
           <button
             className="sidebar-item w-full"
-            onClick={() => navigate('/')}
+            onClick={() => {
+              navigate('/');
+              setSidebarOpen(false);
+            }}
           >
             <Icons.Settings />
             <span>{t('menu.settings')}</span>
@@ -128,13 +162,20 @@ export default function GameLayout({ children }: GameLayoutProps) {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden w-full">
         {/* Top bar */}
         <header className="h-14 bg-slate-800 border-b border-slate-700 flex items-center justify-between px-4">
-          <div className="flex items-center gap-4">
-            <span className="text-slate-300">{formatDate(currentDate)}</span>
+          <div className="flex items-center gap-2 sm:gap-4">
+            {/* Mobile menu button */}
+            <button
+              className="lg:hidden p-2 -ml-2 text-slate-400 hover:text-white"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Icons.Menu />
+            </button>
+            <span className="text-slate-300 text-sm sm:text-base">{formatDate(currentDate)}</span>
             {playerTeam && (
-              <span className="text-slate-400">
+              <span className="text-slate-400 text-sm hidden sm:inline">
                 {t('competition.position')}: {playerTeam.leaguePosition || '-'}
               </span>
             )}
@@ -142,20 +183,21 @@ export default function GameLayout({ children }: GameLayoutProps) {
 
           <div className="flex items-center gap-2">
             {todaysMatch && (
-              <span className="text-yellow-400 text-sm mr-2">Match day!</span>
+              <span className="text-yellow-400 text-xs sm:text-sm mr-1 sm:mr-2 hidden sm:inline">Match day!</span>
             )}
             <button
               onClick={handleContinue}
-              className={`btn flex items-center gap-2 ${todaysMatch ? 'btn-primary bg-green-600 hover:bg-green-700' : 'btn-primary'}`}
+              className={`btn flex items-center gap-1 sm:gap-2 text-sm sm:text-base px-3 sm:px-4 ${todaysMatch ? 'btn-primary bg-green-600 hover:bg-green-700' : 'btn-primary'}`}
             >
               <Icons.Play />
-              {todaysMatch ? 'Play Match' : 'Continue'}
+              <span className="hidden sm:inline">{todaysMatch ? 'Play Match' : 'Continue'}</span>
+              <span className="sm:hidden">{todaysMatch ? 'Play' : 'Next'}</span>
             </button>
           </div>
         </header>
 
         {/* Page content */}
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 overflow-auto p-3 sm:p-6">
           {children}
         </div>
       </main>
