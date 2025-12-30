@@ -78,7 +78,25 @@ export const useMatchStore = create<MatchStore>((set, get) => ({
 
     // Set up tick callback
     engine.onTick((state, result) => {
-      set({ matchState: { ...state } });
+      // Deep clone state to ensure React detects changes to nested objects
+      set({
+        matchState: {
+          ...state,
+          home: {
+            ...state.home,
+            players: state.home.players.map(p => ({ ...p })),
+            onCourt: [...state.home.onCourt],
+            bench: [...state.home.bench],
+          },
+          away: {
+            ...state.away,
+            players: state.away.players.map(p => ({ ...p })),
+            onCourt: [...state.away.onCourt],
+            bench: [...state.away.bench],
+          },
+          events: [...state.events],
+        },
+      });
 
       // Add any commentary from events
       if (result.commentary) {
