@@ -353,18 +353,6 @@ export default function MatchView() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Court visualization */}
         <div className="lg:col-span-2 card">
-          {/* Debug: Player count and positions */}
-          <div className="text-xs text-slate-400 mb-2">
-            <div className="flex justify-between">
-              <span>Home: {matchState?.home.players.filter(p => p.isOnCourt).length || 0} on court</span>
-              <span>Away: {matchState?.away.players.filter(p => p.isOnCourt).length || 0} on court</span>
-            </div>
-            <div className="text-[10px] mt-1">
-              H: {matchState?.home.players.filter(p => p.isOnCourt).map(p => `(${Math.round(p.position.x)},${Math.round(p.position.y)})`).join(' ')}
-              {' | '}
-              A: {matchState?.away.players.filter(p => p.isOnCourt).map(p => `(${Math.round(p.position.x)},${Math.round(p.position.y)})`).join(' ')}
-            </div>
-          </div>
           <div className="relative w-full aspect-[2/1] bg-court-wood rounded-xl overflow-hidden border-4 border-white/20">
             {/* Court lines */}
             <div className="absolute inset-0">
