@@ -900,57 +900,68 @@ export class MatchEngine {
     zone: CourtZone
   ): Record<string, number> {
     const weights: Record<string, number> = {
-      pass: 60,
-      dribble: 25,
-      shoot: 2,
-      lose_possession: 8,
+      pass: 70,
+      dribble: 20,
+      shoot: 1,
+      lose_possession: 9,
     };
 
-    // Adjust based on zone - only shoot frequently in dangerous positions
+    // Adjust based on zone - only shoot in dangerous positions
     if (zone === 'opp_goal_area') {
-      weights.shoot = 25;
-      weights.pass = 40;
-      weights.dribble = 20;
-    } else if (zone === 'opp_half_attack') {
-      weights.shoot = 8;
+      weights.shoot = 12;
       weights.pass = 50;
+      weights.dribble = 25;
+      weights.lose_possession = 13;
+    } else if (zone === 'opp_half_attack') {
+      weights.shoot = 3;
+      weights.pass = 55;
       weights.dribble = 30;
+      weights.lose_possession = 12;
     }
 
     // Adjust based on tactics
     if (tactic.mentality === 'attacking') {
-      weights.shoot *= 1.3;
-      weights.dribble *= 1.2;
+      weights.shoot *= 1.2;
+      weights.dribble *= 1.1;
     } else if (tactic.mentality === 'defensive') {
-      weights.pass *= 1.3;
-      weights.shoot *= 0.7;
+      weights.pass *= 1.2;
+      weights.shoot *= 0.8;
     }
 
     if (tactic.tempo === 'fast') {
-      weights.dribble *= 1.2;
+      weights.dribble *= 1.1;
     }
 
     // Adjust based on player skills
     if (player.player.technical.shooting > 15) {
-      weights.shoot *= 1.2;
+      weights.shoot *= 1.15;
     }
     if (player.player.technical.dribbling > 15) {
-      weights.dribble *= 1.2;
+      weights.dribble *= 1.15;
     }
 
     return weights;
   }
 
   private calculateShootChance(player: PlayerMatchState, tactic: Tactic): number {
-    let chance = 0.15;
+    let chance = 0.10;
 
     // Better shooters shoot more
-    chance += (player.player.technical.shooting - 10) * 0.01;
+    chance += (player.player.technical.shooting - 10) * 0.008;
 
     // Attacking mentality increases shooting
-    if (tactic.mentality === 'attacking') chance *= 1.3;
+    if (tactic.mentality === 'attacking') chance *= 1.2;
 
-    return Math.min(0.4, Math.max(0.05, chance));
+    return Math.min(0.25, Math.max(0.05, chance));
+  }
+
+  // Get average team strength for realistic scoring
+  private getTeamStrength(side: 'home' | 'away'): number {
+    const team = this.state[side];
+    const onCourtPlayers = team.players.filter(p => p.isOnCourt);
+    if (onCourtPlayers.length === 0) return 100;
+    const total = onCourtPlayers.reduce((sum, p) => sum + p.player.currentAbility, 0);
+    return total / onCourtPlayers.length;
   }
 
   private calculateShotOutcome(shooter: PlayerMatchState, opponent: TeamMatchState): ShotOutcome {
@@ -959,32 +970,40 @@ export class MatchEngine {
     const gk = opponent.players.find(p => p.player.position === 'GK' && p.isOnCourt);
     const gkSkill = gk?.player.goalkeeping?.reflexes || 10;
 
-    // Base on-target chance - reduced for more realistic outcomes
-    const onTargetChance = 0.30 + (shootingSkill / 100) + (composure / 200);
-    const isOnTarget = Math.random() < onTargetChance;
+    // Get team strengths for realistic scoring
+    const attackingTeam = this.state.ball.possessionTeam!;
+    const defendingTeam = attackingTeam === 'home' ? 'away' : 'home';
+    const attackStrength = this.getTeamStrength(attackingTeam);
+    const defendStrength = this.getTeamStrength(defendingTeam);
+    const strengthRatio = attackStrength / (attackStrength + defendStrength);
+
+    // Base on-target chance - adjusted by team strength
+    const baseOnTarget = 0.25 + (strengthRatio - 0.5) * 0.2;
+    const onTargetChance = baseOnTarget + (shootingSkill / 150) + (composure / 300);
+    const isOnTarget = Math.random() < Math.min(0.55, Math.max(0.15, onTargetChance));
 
     if (!isOnTarget) {
       return {
         isOnTarget: false,
         isGoal: false,
         isSaved: false,
-        isBlocked: Math.random() < 0.35,
-        isWide: Math.random() < 0.5,
-        isPost: Math.random() < 0.1,
+        isBlocked: Math.random() < 0.40,
+        isWide: Math.random() < 0.45,
+        isPost: Math.random() < 0.08,
         power: Math.random() * 100,
         placement: ['left', 'center', 'right'][Math.floor(Math.random() * 3)] as 'left' | 'center' | 'right',
         height: ['low', 'mid', 'high'][Math.floor(Math.random() * 3)] as 'low' | 'mid' | 'high',
       };
     }
 
-    // Calculate goal chance for on-target shots - significantly reduced
-    // In futsal, GKs save most on-target shots
-    const baseGoalChance = 0.18; // Reduced from 0.35
-    const shooterModifier = (shootingSkill - 10) * 0.012; // Reduced impact
-    const gkModifier = (gkSkill - 10) * -0.02;
+    // Calculate goal chance for on-target shots
+    // Stronger teams convert more, weaker teams convert less
+    const baseGoalChance = 0.12 + (strengthRatio - 0.5) * 0.15;
+    const shooterModifier = (shootingSkill - 10) * 0.008;
+    const gkModifier = (gkSkill - 10) * -0.015;
     const staminaModifier = (shooter.stamina - 50) * 0.001;
 
-    const goalChance = Math.max(0.08, Math.min(0.45, baseGoalChance + shooterModifier + gkModifier + staminaModifier));
+    const goalChance = Math.max(0.05, Math.min(0.35, baseGoalChance + shooterModifier + gkModifier + staminaModifier));
 
     const isGoal = Math.random() < goalChance;
 
