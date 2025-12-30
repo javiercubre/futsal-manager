@@ -123,7 +123,74 @@ export const useGameStore = create<GameState>()(
       advanceDay: () => set((state) => {
         const newDate = new Date(state.currentDate);
         newDate.setDate(newDate.getDate() + 1);
-        return { currentDate: newDate };
+
+        // Simulate CPU vs CPU matches for today
+        const updatedCompetitions = state.competitions.map(comp => {
+          const updatedFixtures = comp.fixtures.map(fixture => {
+            // Skip if already played
+            if (fixture.played) return fixture;
+
+            // Check if fixture is today
+            const fixtureDate = new Date(fixture.date);
+            fixtureDate.setHours(0, 0, 0, 0);
+            const today = new Date(state.currentDate);
+            today.setHours(0, 0, 0, 0);
+
+            if (fixtureDate.getTime() !== today.getTime()) return fixture;
+
+            // Skip if player's team is involved (they play manually)
+            if (fixture.homeTeamId === state.playerTeamId || fixture.awayTeamId === state.playerTeamId) {
+              return fixture;
+            }
+
+            // Simulate the match
+            const homeTeam = state.teams.find(t => t.id === fixture.homeTeamId);
+            const awayTeam = state.teams.find(t => t.id === fixture.awayTeamId);
+
+            if (!homeTeam || !awayTeam) return fixture;
+
+            // Calculate team strengths (average of squad abilities)
+            const getTeamStrength = (team: Team): number => {
+              if (!team.squad || team.squad.length === 0) return 50;
+              const total = team.squad.reduce((sum, p) => sum + p.currentAbility, 0);
+              return total / team.squad.length;
+            };
+
+            const homeStrength = getTeamStrength(homeTeam);
+            const awayStrength = getTeamStrength(awayTeam);
+
+            // Home advantage factor
+            const homeAdvantage = 1.15;
+            const adjustedHomeStrength = homeStrength * homeAdvantage;
+
+            // Calculate expected goals based on strength difference
+            // Futsal typically has 4-8 total goals per match
+            const strengthRatio = adjustedHomeStrength / (adjustedHomeStrength + awayStrength);
+
+            // Random goals with poisson-like distribution
+            const baseGoals = 2 + Math.random() * 3; // 2-5 base goals per team
+            const homeExpected = baseGoals * (0.5 + strengthRatio * 0.5);
+            const awayExpected = baseGoals * (0.5 + (1 - strengthRatio) * 0.5);
+
+            // Add randomness
+            const homeGoals = Math.max(0, Math.round(homeExpected + (Math.random() - 0.5) * 3));
+            const awayGoals = Math.max(0, Math.round(awayExpected + (Math.random() - 0.5) * 3));
+
+            return {
+              ...fixture,
+              played: true,
+              homeGoals,
+              awayGoals,
+            };
+          });
+
+          return { ...comp, fixtures: updatedFixtures };
+        });
+
+        return {
+          currentDate: newDate,
+          competitions: updatedCompetitions,
+        };
       }),
 
       setCurrentMatch: (match) => set({ currentMatch: match }),
