@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-court-wood: #D4A574;
+  --color-court-line: #FFFFFF;
+  --color-court-goal: #E53935;
+}
+
+body {
+  @apply bg-slate-900 text-white antialiased;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-slate-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-600 rounded;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-500;
+}
+
+/* Custom components */
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200;
+  }
+
+  .btn-primary {
+    @apply bg-primary-600 hover:bg-primary-700 text-white;
+  }
+
+  .btn-secondary {
+    @apply bg-slate-700 hover:bg-slate-600 text-white;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white;
+  }
+
+  .btn-success {
+    @apply bg-green-600 hover:bg-green-700 text-white;
+  }
+
+  .card {
+    @apply bg-slate-800 rounded-xl p-4 shadow-lg;
+  }
+
+  .input {
+    @apply bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+  }
+
+  .sidebar-item {
+    @apply flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 hover:bg-slate-700;
+  }
+
+  .sidebar-item.active {
+    @apply bg-primary-600 text-white;
+  }
+}
+
+/* Futsal court styles */
+.futsal-court {
+  background-color: var(--color-court-wood);
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 40px,
+      rgba(0,0,0,0.03) 40px,
+      rgba(0,0,0,0.03) 80px
+    );
+}
+
+/* Player dot on match visualization */
+.player-dot {
+  @apply w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-md;
+}
+
+/* Ball animation */
+@keyframes ball-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.ball {
+  animation: ball-pulse 0.5s ease-in-out infinite;
+}
+
+/* Goal celebration */
+@keyframes goal-flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.goal-flash {
+  animation: goal-flash 0.3s ease-in-out 3;
+}
+
+/* Form indicator colors */
+.form-w { @apply bg-green-500; }
+.form-d { @apply bg-yellow-500; }
+.form-l { @apply bg-red-500; }
+
+/* Position colors */
+.pos-gk { @apply bg-amber-500; }
+.pos-fixo { @apply bg-blue-500; }
+.pos-ala { @apply bg-green-500; }
+.pos-pivo { @apply bg-red-500; }

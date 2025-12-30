@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm create:*)",
+      "Bash(npm add:*)",
+      "Bash(npx tauri init:*)",
+      "Bash(cargo --version:*)",
+      "Bash(git init:*)"
+    ]
+  }
+}

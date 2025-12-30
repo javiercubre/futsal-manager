@@ -1,0 +1,259 @@
+// Futsal Manager Database Schema
+// Using SQLite for local development, can switch to PostgreSQL for production
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./futsal-manager.db"
+}
+
+// ============================================
+// PLAYER
+// ============================================
+
+model Player {
+  id               String   @id @default(cuid())
+  name             String
+  shortName        String
+  nationality      String
+  dateOfBirth      DateTime
+  position         String   // GK, FIXO, ALA, PIVO
+  secondaryPositions String  // JSON array
+  preferredFoot    String   // left, right, both
+  shirtNumber      Int?
+
+  // Attributes (stored as JSON for flexibility)
+  technicalAttributes String  // JSON
+  mentalAttributes    String  // JSON
+  physicalAttributes  String  // JSON
+  goalkeeperAttributes String? // JSON (only for GK)
+
+  // Ratings
+  currentAbility   Int
+  potential        Int
+  form             Int      @default(5)
+  morale           Int      @default(50)
+  fitness          Int      @default(100)
+  sharpness        Int      @default(50)
+
+  // Status
+  injured          Boolean  @default(false)
+  injuryDetails    String?  // JSON
+  suspended        Boolean  @default(false)
+  suspensionMatches Int     @default(0)
+
+  // Contract
+  wage             Int
+  contractStart    DateTime
+  contractEnd      DateTime
+  releaseClause    Int?
+
+  marketValue      Int
+
+  // Stats (JSON for flexibility)
+  seasonStats      String   @default("{}")
+  careerStats      String   @default("{}")
+
+  // Relations
+  teamId           String?
+  team             Team?    @relation(fields: [teamId], references: [id])
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([teamId])
+  @@index([position])
+  @@index([nationality])
+}
+
+// ============================================
+// TEAM
+// ============================================
+
+model Team {
+  id              String   @id @default(cuid())
+  name            String
+  shortName       String
+  abbreviation    String   // 3-letter code
+  country         String   // PT, ES
+  league          String
+  city            String
+  founded         Int
+
+  // Appearance
+  primaryColor    String
+  secondaryColor  String
+  goalkeeperColor String
+
+  // Facilities (1-5)
+  trainingFacility Int     @default(3)
+  youthFacility    Int     @default(3)
+  stadiumCapacity  Int     @default(2000)
+  medicalCenter    Int     @default(3)
+
+  // Finances
+  balance          Int     @default(1000000)
+  wageBudget       Int     @default(50000)
+  transferBudget   Int     @default(500000)
+
+  reputation       Int     @default(50)
+  fanBase          Int     @default(1000)
+
+  managerName      String?
+
+  // Current standing
+  leaguePosition   Int     @default(0)
+  points           Int     @default(0)
+  goalsFor         Int     @default(0)
+  goalsAgainst     Int     @default(0)
+
+  // Relations
+  players          Player[]
+  homeMatches      Match[] @relation("HomeTeam")
+  awayMatches      Match[] @relation("AwayTeam")
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([country])
+  @@index([league])
+}
+
+// ============================================
+// MATCH
+// ============================================
+
+model Match {
+  id               String   @id @default(cuid())
+
+  homeTeamId       String
+  homeTeam         Team     @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeamId       String
+  awayTeam         Team     @relation("AwayTeam", fields: [awayTeamId], references: [id])
+
+  competitionId    String
+  competition      Competition @relation(fields: [competitionId], references: [id])
+
+  round            Int?
+  leg              Int?     // 1 or 2 for two-legged ties
+  date             DateTime
+  venue            String
+
+  status           String   @default("scheduled") // scheduled, live, finished
+
+  homeGoals        Int      @default(0)
+  awayGoals        Int      @default(0)
+
+  // Futsal-specific
+  homeAccumulatedFouls Int  @default(0)
+  awayAccumulatedFouls Int  @default(0)
+  homeTimeoutsUsed     Int  @default(0)
+  awayTimeoutsUsed     Int  @default(0)
+
+  // JSON data
+  events           String   @default("[]")  // JSON array of MatchEvent
+  stats            String   @default("{}")  // JSON MatchStats
+  homeLineup       String   @default("[]")  // JSON array of player IDs
+  awayLineup       String   @default("[]")
+  homeBench        String   @default("[]")
+  awayBench        String   @default("[]")
+  homeTactic       String   @default("{}")  // JSON Tactic
+  awayTactic       String   @default("{}")
+  playerRatings    String   @default("{}")  // JSON Map<string, number>
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([homeTeamId])
+  @@index([awayTeamId])
+  @@index([competitionId])
+  @@index([date])
+}
+
+// ============================================
+// COMPETITION
+// ============================================
+
+model Competition {
+  id              String   @id @default(cuid())
+  name            String
+  shortName       String
+  country         String   // PT, ES, EU
+  type            String   // league, cup, european
+  season          String   // "2024-25"
+
+  currentRound    Int      @default(1)
+
+  // Prize money JSON
+  prizes          String   @default("{}")
+
+  // Relations
+  matches         Match[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([name, season])
+  @@index([country])
+  @@index([type])
+}
+
+// ============================================
+// SAVE GAME
+// ============================================
+
+model SaveGame {
+  id              String   @id @default(cuid())
+  name            String
+  managerName     String
+  teamId          String
+  teamName        String
+  season          String
+
+  gameDate        DateTime
+  gameState       String   // JSON of full game state
+
+  createdAt       DateTime @default(now())
+  lastSaved       DateTime @updatedAt
+
+  @@index([managerName])
+}
+
+// ============================================
+// TRANSFER
+// ============================================
+
+model TransferOffer {
+  id              String   @id @default(cuid())
+  playerId        String
+  fromTeamId      String
+  toTeamId        String
+  fee             Int
+  wageOffer       Int
+  contractLength  Int      // years
+  status          String   @default("pending") // pending, accepted, rejected, negotiating
+  expiryDate      DateTime
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([playerId])
+  @@index([status])
+}
+
+model TransferHistory {
+  id              String   @id @default(cuid())
+  playerId        String
+  fromTeamId      String?
+  toTeamId        String
+  fee             Int
+  date            DateTime
+
+  createdAt       DateTime @default(now())
+
+  @@index([playerId])
+  @@index([date])
+}
