@@ -17,6 +17,18 @@ npm run db:push      # Sync Prisma schema to SQLite database
 npm run db:studio    # Open Prisma Studio GUI for database management
 ```
 
+## Web Deployment (GitHub Pages)
+
+The game auto-deploys to GitHub Pages on every push to `main`.
+
+**Your game URL:** `https://YOUR_USERNAME.github.io/YOUR_REPO_NAME/`
+
+### Enable GitHub Pages (one-time setup)
+1. Go to your repo on GitHub
+2. Settings → Pages
+3. Source: **GitHub Actions**
+4. Push to `main` - the game deploys automatically
+
 ## Desktop App (Tauri)
 
 The game is packaged as a standalone desktop application using Tauri.

@@ -4,6 +4,7 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
+  base: './', // Relative paths for GitHub Pages compatibility
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
