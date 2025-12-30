@@ -82,15 +82,25 @@ export const useMatchStore = create<MatchStore>((set, get) => ({
       set({
         matchState: {
           ...state,
+          ball: { ...state.ball, position: { ...state.ball.position } },
+          stats: { ...state.stats },
           home: {
             ...state.home,
-            players: state.home.players.map(p => ({ ...p })),
+            players: state.home.players.map(p => ({
+              ...p,
+              position: { ...p.position },
+              targetPosition: { ...p.targetPosition },
+            })),
             onCourt: [...state.home.onCourt],
             bench: [...state.home.bench],
           },
           away: {
             ...state.away,
-            players: state.away.players.map(p => ({ ...p })),
+            players: state.away.players.map(p => ({
+              ...p,
+              position: { ...p.position },
+              targetPosition: { ...p.targetPosition },
+            })),
             onCourt: [...state.away.onCourt],
             bench: [...state.away.bench],
           },
