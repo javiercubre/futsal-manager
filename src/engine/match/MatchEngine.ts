@@ -697,12 +697,19 @@ export class MatchEngine {
     foulEvent.description = `Foul by ${fouler.player.name}`;
     events.push(foulEvent);
 
-    // Check for card
-    const cardChance = fouler.foulsCommitted * 0.15 + (fouler.player.mental.aggression / 100);
-    if (Math.random() < cardChance) {
+    // Check for card - cards are rare events
+    // Yellow card: ~5% base chance, increases slightly with fouls and aggression
+    // Red card (direct): extremely rare, only for very aggressive players with multiple fouls
+    const yellowCardChance = 0.03 + (fouler.foulsCommitted * 0.02) + (fouler.player.mental.aggression / 500);
+
+    if (Math.random() < yellowCardChance) {
       if (fouler.hasYellowCard) {
-        // Second yellow = red
-        events.push(...this.issueCard(fouler, foulerSide, 'second_yellow'));
+        // Second yellow = red, but only if team has more than 4 players
+        const team = this.state[foulerSide];
+        if (team.onCourt.length > 4) {
+          events.push(...this.issueCard(fouler, foulerSide, 'second_yellow'));
+        }
+        // If team already has 4 players, no second yellow (minimum 4 players rule)
       } else {
         events.push(...this.issueCard(fouler, foulerSide, 'yellow_card'));
       }
@@ -740,6 +747,7 @@ export class MatchEngine {
     type: 'yellow_card' | 'red_card' | 'second_yellow'
   ): MatchEvent[] {
     const events: MatchEvent[] = [];
+    const team = this.state[side];
 
     if (type === 'yellow_card') {
       player.hasYellowCard = true;
@@ -751,12 +759,17 @@ export class MatchEngine {
 
       player.rating = Math.max(1, player.rating - 0.3);
     } else {
-      // Red card or second yellow
+      // Red card or second yellow - minimum 4 players rule
+      // In futsal, a team cannot have fewer than 4 players
+      if (team.onCourt.length <= 4) {
+        // Can't send off - team already at minimum, just give a warning
+        return events;
+      }
+
       this.state.stats.redCards[side]++;
       player.isOnCourt = false;
 
       // Remove from onCourt
-      const team = this.state[side];
       team.onCourt = team.onCourt.filter(id => id !== player.playerId);
 
       // Start 2-minute power play (120 seconds) - team plays with 4 players
