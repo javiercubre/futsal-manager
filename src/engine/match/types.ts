@@ -46,6 +46,10 @@ export interface TeamMatchState {
   timeoutsUsed: number;
   accumulatedFouls: number; // Resets each half
   isUsingFlyingGK: boolean;
+  // Red card power play: seconds remaining until team can sub back to 5 players
+  powerPlaySecondsRemaining: number;
+  // Player sent off who triggered current power play (for tracking)
+  sentOffPlayerId: string | null;
 }
 
 // Match simulation state

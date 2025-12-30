@@ -303,6 +303,11 @@ export default function MatchView() {
             <div>
               <p className="text-white font-semibold">{matchState?.home.team.name}</p>
               <p className="text-slate-400 text-sm">Home</p>
+              {matchState && matchState.home.powerPlaySecondsRemaining > 0 && (
+                <p className="text-red-400 text-xs font-medium">
+                  🔴 4 players ({Math.floor(matchState.home.powerPlaySecondsRemaining / 60)}:{(matchState.home.powerPlaySecondsRemaining % 60).toString().padStart(2, '0')})
+                </p>
+              )}
             </div>
           </div>
 
@@ -329,6 +334,11 @@ export default function MatchView() {
             <div>
               <p className="text-white font-semibold text-right">{matchState?.away.team.name}</p>
               <p className="text-slate-400 text-sm text-right">Away</p>
+              {matchState && matchState.away.powerPlaySecondsRemaining > 0 && (
+                <p className="text-red-400 text-xs font-medium text-right">
+                  🔴 4 players ({Math.floor(matchState.away.powerPlaySecondsRemaining / 60)}:{(matchState.away.powerPlaySecondsRemaining % 60).toString().padStart(2, '0')})
+                </p>
+              )}
             </div>
             <div
               className="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold"

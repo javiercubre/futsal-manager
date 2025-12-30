@@ -115,6 +115,8 @@ export class MatchEngine {
         timeoutsUsed: 0,
         accumulatedFouls: 0,
         isUsingFlyingGK: false,
+        powerPlaySecondsRemaining: 0,
+        sentOffPlayerId: null,
       };
     };
 
@@ -238,6 +240,9 @@ export class MatchEngine {
 
     // Update player stamina
     this.updatePlayerStamina();
+
+    // Check power play countdown (red card 2-minute penalty)
+    this.updatePowerPlay();
 
     // Check for automatic substitutions (every 30 seconds)
     if (this.state.second % 30 === 0) {
@@ -738,7 +743,7 @@ export class MatchEngine {
       this.state.stats.yellowCards[side]++;
 
       const event = this.createEvent('yellow_card', side, player.playerId);
-      event.description = `Yellow card for ${player.player.name}`;
+      event.description = `🟨 Yellow card for ${player.player.name}`;
       events.push(event);
 
       player.rating = Math.max(1, player.rating - 0.3);
@@ -751,14 +756,59 @@ export class MatchEngine {
       const team = this.state[side];
       team.onCourt = team.onCourt.filter(id => id !== player.playerId);
 
+      // Start 2-minute power play (120 seconds) - team plays with 4 players
+      team.powerPlaySecondsRemaining = 120;
+      team.sentOffPlayerId = player.playerId;
+
       const event = this.createEvent(type, side, player.playerId);
       event.description = type === 'second_yellow'
-        ? `Second yellow! ${player.player.name} is sent off!`
-        : `Red card! ${player.player.name} is sent off!`;
+        ? `🟨🟥 Second yellow! ${player.player.name} is sent off! Team plays with 4 for 2 minutes.`
+        : `🟥 Red card! ${player.player.name} is sent off! Team plays with 4 for 2 minutes.`;
       events.push(event);
     }
 
     return events;
+  }
+
+  // Handle power play countdown and auto-substitute when 2 minutes are up
+  private updatePowerPlay(): void {
+    (['home', 'away'] as const).forEach(side => {
+      const team = this.state[side];
+
+      if (team.powerPlaySecondsRemaining > 0) {
+        team.powerPlaySecondsRemaining--;
+
+        // When power play ends, bring on a substitute
+        if (team.powerPlaySecondsRemaining === 0 && team.onCourt.length < 5) {
+          // Find a suitable substitute from the bench
+          const benchPlayer = team.players.find(p =>
+            team.bench.includes(p.playerId) &&
+            p.playerId !== team.sentOffPlayerId // Can't be the sent-off player
+          );
+
+          if (benchPlayer) {
+            // Add player to court
+            team.onCourt.push(benchPlayer.playerId);
+            team.bench = team.bench.filter(id => id !== benchPlayer.playerId);
+            benchPlayer.isOnCourt = true;
+
+            // Give them a position (center of the court)
+            const isHome = side === 'home';
+            benchPlayer.position = { x: isHome ? 50 : 50, y: 50 };
+            benchPlayer.targetPosition = { x: isHome ? 50 : 50, y: 50 };
+
+            this.addEvent(
+              'substitution',
+              side,
+              benchPlayer.playerId,
+              `⬆️ ${benchPlayer.player.name} comes on - ${team.team.shortName} back to 5 players after power play`
+            );
+          }
+
+          team.sentOffPlayerId = null;
+        }
+      }
+    });
   }
 
   private executePass(
