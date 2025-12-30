@@ -200,12 +200,12 @@ export default function MatchView() {
     }
 
     // Use actual squad or fall back to mock players
-    const homePlayers = homeTeam.squad?.length > 0
+    const homePlayers = homeTeam.squad && homeTeam.squad.length > 0
       ? homeTeam.squad
-      : createMockPlayers(homeTeam.name, homeTeam.colors.primary);
-    const awayPlayers = awayTeam.squad?.length > 0
+      : createMockPlayers(homeTeam.name, homeTeam.colors?.primary || '#e53935');
+    const awayPlayers = awayTeam.squad && awayTeam.squad.length > 0
       ? awayTeam.squad
-      : createMockPlayers(awayTeam.name, awayTeam.colors.primary);
+      : createMockPlayers(awayTeam.name, awayTeam.colors?.primary || '#2563eb');
 
     initializeMatch(
       homeTeam,

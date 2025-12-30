@@ -15,8 +15,22 @@ export default function Squad() {
   const [filterPosition, setFilterPosition] = useState<string>('all');
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
 
-  // Get players for this team
-  const teamPlayers = players.filter(p => p.id.startsWith(playerTeam?.id || ''));
+  // Show message if no team selected
+  if (!playerTeam) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold text-white">{t('squad.title')}</h1>
+        <div className="card text-center py-12">
+          <p className="text-slate-400">No team selected. Please start a new game.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Get players for this team - use squad if available, otherwise filter by ID prefix
+  const teamPlayers = playerTeam?.squad && playerTeam.squad.length > 0
+    ? playerTeam.squad
+    : players.filter(p => playerTeam && p.id.startsWith(playerTeam.id));
 
   // Sort and filter
   const sortedPlayers = [...teamPlayers]
