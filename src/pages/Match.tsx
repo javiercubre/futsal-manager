@@ -386,39 +386,45 @@ export default function MatchView() {
             )}
 
             {/* Home players */}
-            {matchState?.home.players.filter(p => p.isOnCourt).map((player, i) => (
+            {matchState?.home.players.filter(p => p.isOnCourt).map((player) => (
               <div
                 key={player.playerId}
-                className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300"
+                className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300 flex flex-col items-center"
                 style={{
                   left: `${player.position.x}%`,
                   top: `${player.position.y}%`,
                 }}
               >
+                <span className="text-[8px] text-white font-semibold bg-black/50 px-1 rounded mb-0.5 whitespace-nowrap">
+                  {player.player.shortName || player.player.name}
+                </span>
                 <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg"
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-lg"
                   style={{ backgroundColor: matchState.home.team.colors.primary }}
                 >
-                  {i + 1}
+                  {player.player.shirtNumber || '?'}
                 </div>
               </div>
             ))}
 
             {/* Away players */}
-            {matchState?.away.players.filter(p => p.isOnCourt).map((player, i) => (
+            {matchState?.away.players.filter(p => p.isOnCourt).map((player) => (
               <div
                 key={player.playerId}
-                className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300"
+                className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300 flex flex-col items-center"
                 style={{
                   left: `${player.position.x}%`,
                   top: `${player.position.y}%`,
                 }}
               >
+                <span className="text-[8px] text-white font-semibold bg-black/50 px-1 rounded mb-0.5 whitespace-nowrap">
+                  {player.player.shortName || player.player.name}
+                </span>
                 <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg"
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-lg"
                   style={{ backgroundColor: matchState.away.team.colors.primary }}
                 >
-                  {i + 1}
+                  {player.player.shirtNumber || '?'}
                 </div>
               </div>
             ))}
