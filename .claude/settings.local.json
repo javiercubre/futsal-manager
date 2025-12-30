@@ -6,7 +6,13 @@
       "Bash(npx tauri init:*)",
       "Bash(cargo --version:*)",
       "Bash(git init:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(gh run list:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:javiercubre.github.io)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   }
 }

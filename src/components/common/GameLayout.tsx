@@ -1,8 +1,9 @@
-import { ReactNode } from 'react';
+import { ReactNode, useMemo } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useGameStore } from '@/store/gameStore';
 import clsx from 'clsx';
+import type { Fixture } from '@/types';
 
 interface GameLayoutProps {
   children: ReactNode;
@@ -25,7 +26,39 @@ const Icons = {
 export default function GameLayout({ children }: GameLayoutProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { playerTeam, currentDate, managerName, isPaused, togglePause, advanceDay } = useGameStore();
+  const { playerTeam, playerTeamId, currentDate, managerName, competitions, advanceDay } = useGameStore();
+
+  // Check if there's a match today that hasn't been played
+  const todaysMatch = useMemo((): (Fixture & { competitionId: string }) | null => {
+    if (!playerTeamId || competitions.length === 0) return null;
+
+    const today = new Date(currentDate);
+    today.setHours(0, 0, 0, 0);
+
+    for (const comp of competitions) {
+      for (const fixture of comp.fixtures) {
+        const fixtureDate = new Date(fixture.date);
+        fixtureDate.setHours(0, 0, 0, 0);
+
+        if (fixtureDate.getTime() === today.getTime() &&
+            (fixture.homeTeamId === playerTeamId || fixture.awayTeamId === playerTeamId) &&
+            !fixture.played) {
+          return { ...fixture, competitionId: comp.id };
+        }
+      }
+    }
+    return null;
+  }, [playerTeamId, competitions, currentDate]);
+
+  const handleContinue = () => {
+    if (todaysMatch) {
+      // Navigate to match page with the fixture
+      navigate('/game/match', { state: { fixture: todaysMatch } });
+    } else {
+      // No match today, advance to next day
+      advanceDay();
+    }
+  };
 
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString('en-GB', {
@@ -108,12 +141,15 @@ export default function GameLayout({ children }: GameLayoutProps) {
           </div>
 
           <div className="flex items-center gap-2">
+            {todaysMatch && (
+              <span className="text-yellow-400 text-sm mr-2">Match day!</span>
+            )}
             <button
-              onClick={advanceDay}
-              className="btn btn-primary flex items-center gap-2"
+              onClick={handleContinue}
+              className={`btn flex items-center gap-2 ${todaysMatch ? 'btn-primary bg-green-600 hover:bg-green-700' : 'btn-primary'}`}
             >
               <Icons.Play />
-              Continue
+              {todaysMatch ? 'Play Match' : 'Continue'}
             </button>
           </div>
         </header>
