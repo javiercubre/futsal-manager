@@ -241,6 +241,9 @@ export class MatchEngine {
     // Update player stamina
     this.updatePlayerStamina();
 
+    // Update player positions (randomize movement)
+    this.updatePlayerPositions();
+
     // Check power play countdown (red card 2-minute penalty)
     this.updatePowerPlay();
 
@@ -1059,6 +1062,55 @@ export class MatchEngine {
           const staminaLoss = 0.05 + (Math.random() * 0.05);
           player.stamina = Math.max(0, player.stamina - staminaLoss);
         }
+      });
+    });
+  }
+
+  // Update player positions - goalkeepers stay near goal, outfield players move around
+  private updatePlayerPositions(): void {
+    const ballX = this.state.ball.position.x;
+    const possessionTeam = this.state.ball.possessionTeam;
+
+    (['home', 'away'] as const).forEach(side => {
+      const team = this.state[side];
+      const isHome = side === 'home';
+      const isAttacking = possessionTeam === side;
+
+      team.players.forEach(player => {
+        if (!player.isOnCourt) return;
+
+        // Goalkeeper stays near their goal
+        if (player.player.position === 'GK') {
+          const goalX = isHome ? 5 : 95;
+          // Small random movement for GK
+          player.position.x = goalX + (Math.random() * 6 - 3);
+          player.position.y = 50 + (Math.random() * 20 - 10);
+          // Clamp GK position
+          player.position.x = Math.max(2, Math.min(98, player.position.x));
+          player.position.y = Math.max(20, Math.min(80, player.position.y));
+          return;
+        }
+
+        // Outfield players move based on ball position and possession
+        const baseX = isHome
+          ? (isAttacking ? 30 + ballX * 0.5 : 20 + ballX * 0.4)
+          : (isAttacking ? 70 - (100 - ballX) * 0.5 : 80 - (100 - ballX) * 0.4);
+
+        // Add randomness to movement
+        const randomX = (Math.random() - 0.5) * 25;
+        const randomY = (Math.random() - 0.5) * 40;
+
+        // Move towards target position gradually
+        const targetX = Math.max(10, Math.min(90, baseX + randomX));
+        const targetY = Math.max(10, Math.min(90, 50 + randomY));
+
+        // Smooth movement - move 20% towards target each tick
+        player.position.x += (targetX - player.position.x) * 0.2;
+        player.position.y += (targetY - player.position.y) * 0.2;
+
+        // Clamp final position
+        player.position.x = Math.max(5, Math.min(95, player.position.x));
+        player.position.y = Math.max(5, Math.min(95, player.position.y));
       });
     });
   }

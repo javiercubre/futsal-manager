@@ -177,8 +177,9 @@ export const useMatchStore = create<MatchStore>((set, get) => ({
     const { engine, isPlaying } = get();
     if (!engine || !isPlaying) return;
 
-    const result = engine.tick();
-    set({ matchState: engine.getState() });
+    // engine.tick() triggers the onTick callback which updates matchState with deep cloning
+    // Do NOT call set({ matchState: engine.getState() }) here as it would overwrite the deep clone
+    engine.tick();
 
     // Check for half time or full time
     const state = engine.getState();
