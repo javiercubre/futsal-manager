@@ -76,22 +76,34 @@ export class MatchEngine {
       const starting = startingGK ? [startingGK, ...startingOutfield] : outfield.slice(0, 5);
       const bench = players.filter(p => !starting.includes(p));
 
-      const playerStates: PlayerMatchState[] = players.map((player, idx) => ({
-        playerId: player.id,
-        player,
-        position: this.getInitialPosition(player, idx, tactic, isHome),
-        targetPosition: this.getInitialPosition(player, idx, tactic, isHome),
-        stamina: player.fitness,
-        form: player.form + (Math.random() * 2 - 1), // Slight variation
-        hasYellowCard: false,
-        isOnCourt: starting.includes(player),
-        minutesPlayed: 0,
-        goals: 0,
-        assists: 0,
-        saves: 0,
-        foulsCommitted: 0,
-        rating: 6.0, // Starting rating
-      }));
+      // Create a map of starting player IDs to their lineup position (0-4)
+      const startingPositionMap = new Map<string, number>();
+      starting.forEach((p, i) => startingPositionMap.set(p.id, i));
+
+      const playerStates: PlayerMatchState[] = players.map((player) => {
+        // Use lineup position for starters (0-4), bench players get position based on role
+        const isStarting = starting.includes(player);
+        const positionIndex = isStarting
+          ? startingPositionMap.get(player.id) || 0
+          : 0; // Bench players start at default position (doesn't matter, they're not displayed)
+
+        return {
+          playerId: player.id,
+          player,
+          position: this.getInitialPosition(player, positionIndex, tactic, isHome),
+          targetPosition: this.getInitialPosition(player, positionIndex, tactic, isHome),
+          stamina: player.fitness,
+          form: player.form + (Math.random() * 2 - 1), // Slight variation
+          hasYellowCard: false,
+          isOnCourt: isStarting,
+          minutesPlayed: 0,
+          goals: 0,
+          assists: 0,
+          saves: 0,
+          foulsCommitted: 0,
+          rating: 6.0, // Starting rating
+        };
+      });
 
       return {
         team,
@@ -1128,7 +1140,14 @@ export class MatchEngine {
     const inPlayer = teamState.players.find(p => p.playerId === inPlayerId);
 
     if (outPlayer) outPlayer.isOnCourt = false;
-    if (inPlayer) inPlayer.isOnCourt = true;
+    if (inPlayer) {
+      inPlayer.isOnCourt = true;
+      // Substitute takes the position of the player going off
+      if (outPlayer) {
+        inPlayer.position = { ...outPlayer.position };
+        inPlayer.targetPosition = { ...outPlayer.targetPosition };
+      }
+    }
 
     teamState.substitutionsUsed++;
 
