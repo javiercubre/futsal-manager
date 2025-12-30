@@ -499,7 +499,7 @@ export default function MatchView() {
                 { label: t('match.shots'), home: matchState?.stats.shots.home || 0, away: matchState?.stats.shots.away || 0 },
                 { label: t('match.shotsOnTarget'), home: matchState?.stats.shotsOnTarget.home || 0, away: matchState?.stats.shotsOnTarget.away || 0 },
                 { label: t('match.fouls'), home: matchState?.stats.fouls.home || 0, away: matchState?.stats.fouls.away || 0 },
-                { label: t('match.accumulatedFouls'), home: matchState?.home.accumulatedFouls || 0, away: matchState?.away.accumulatedFouls || 0 },
+                { label: '🟨 Yellow Cards', home: matchState?.stats.yellowCards.home || 0, away: matchState?.stats.yellowCards.away || 0 },
               ].map((stat) => (
                 <div key={stat.label} className="flex items-center text-sm">
                   <span className="w-8 text-right text-white font-medium">
