@@ -322,7 +322,7 @@ export const useGameStore = create<GameState>()(
         transferOffers: state.transferOffers,
         simulationSpeed: state.simulationSpeed,
       }),
-      onRehydrate: () => (state) => {
+      onRehydrateStorage: () => (state) => {
         // Convert date strings back to Date objects after rehydration
         if (state && typeof state.currentDate === 'string') {
           state.currentDate = new Date(state.currentDate);

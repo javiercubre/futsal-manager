@@ -34,3 +34,6 @@ coverage/
 
 # Tauri
 src-tauri/target/
+
+# TypeScript build
+dist-node/

@@ -5,7 +5,8 @@
       "Bash(npm add:*)",
       "Bash(npx tauri init:*)",
       "Bash(cargo --version:*)",
-      "Bash(git init:*)"
+      "Bash(git init:*)",
+      "Bash(npm run build:*)"
     ]
   }
 }
