@@ -386,48 +386,54 @@ export default function MatchView() {
             )}
 
             {/* Home players */}
-            {matchState?.home.players.filter(p => p.isOnCourt).map((player) => (
-              <div
-                key={player.playerId}
-                className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300 flex flex-col items-center"
-                style={{
-                  left: `${player.position.x}%`,
-                  top: `${player.position.y}%`,
-                }}
-              >
-                <span className="text-[8px] text-white font-semibold bg-black/50 px-1 rounded mb-0.5 whitespace-nowrap">
-                  {player.player.shortName || player.player.name}
-                </span>
+            {matchState?.home.players.filter(p => p.isOnCourt).map((player) => {
+              const hasBall = player.playerId === matchState.ball.possessionPlayer;
+              return (
                 <div
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-lg"
-                  style={{ backgroundColor: matchState.home.team.colors.primary }}
+                  key={player.playerId}
+                  className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300 flex flex-col items-center"
+                  style={{
+                    left: `${player.position.x}%`,
+                    top: `${player.position.y}%`,
+                  }}
                 >
-                  {player.player.shirtNumber || '?'}
+                  <span className={`text-[8px] font-semibold px-1 rounded mb-0.5 whitespace-nowrap ${hasBall ? 'text-yellow-300 bg-yellow-900/70' : 'text-white bg-black/50'}`}>
+                    {player.player.shortName || player.player.name}
+                  </span>
+                  <div
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-lg ${hasBall ? 'ring-2 ring-yellow-400 ring-offset-1 ring-offset-transparent animate-pulse' : ''}`}
+                    style={{ backgroundColor: matchState.home.team.colors.primary }}
+                  >
+                    {player.player.shirtNumber || '?'}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {/* Away players */}
-            {matchState?.away.players.filter(p => p.isOnCourt).map((player) => (
-              <div
-                key={player.playerId}
-                className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300 flex flex-col items-center"
-                style={{
-                  left: `${player.position.x}%`,
-                  top: `${player.position.y}%`,
-                }}
-              >
-                <span className="text-[8px] text-white font-semibold bg-black/50 px-1 rounded mb-0.5 whitespace-nowrap">
-                  {player.player.shortName || player.player.name}
-                </span>
+            {matchState?.away.players.filter(p => p.isOnCourt).map((player) => {
+              const hasBall = player.playerId === matchState.ball.possessionPlayer;
+              return (
                 <div
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-lg"
-                  style={{ backgroundColor: matchState.away.team.colors.primary }}
+                  key={player.playerId}
+                  className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300 flex flex-col items-center"
+                  style={{
+                    left: `${player.position.x}%`,
+                    top: `${player.position.y}%`,
+                  }}
                 >
-                  {player.player.shirtNumber || '?'}
+                  <span className={`text-[8px] font-semibold px-1 rounded mb-0.5 whitespace-nowrap ${hasBall ? 'text-yellow-300 bg-yellow-900/70' : 'text-white bg-black/50'}`}>
+                    {player.player.shortName || player.player.name}
+                  </span>
+                  <div
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-lg ${hasBall ? 'ring-2 ring-yellow-400 ring-offset-1 ring-offset-transparent animate-pulse' : ''}`}
+                    style={{ backgroundColor: matchState.away.team.colors.primary }}
+                  >
+                    {player.player.shirtNumber || '?'}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Match controls */}
