@@ -900,59 +900,60 @@ export class MatchEngine {
     zone: CourtZone
   ): Record<string, number> {
     const weights: Record<string, number> = {
-      pass: 70,
-      dribble: 20,
-      shoot: 1,
-      lose_possession: 9,
+      pass: 75,
+      dribble: 18,
+      shoot: 0,
+      lose_possession: 7,
     };
 
     // Adjust based on zone - only shoot in dangerous positions
+    // Reduced shooting weights for more realistic goal counts
     if (zone === 'opp_goal_area') {
-      weights.shoot = 12;
-      weights.pass = 50;
-      weights.dribble = 25;
-      weights.lose_possession = 13;
-    } else if (zone === 'opp_half_attack') {
-      weights.shoot = 3;
+      weights.shoot = 6;
       weights.pass = 55;
-      weights.dribble = 30;
-      weights.lose_possession = 12;
+      weights.dribble = 22;
+      weights.lose_possession = 17;
+    } else if (zone === 'opp_half_attack') {
+      weights.shoot = 1;
+      weights.pass = 60;
+      weights.dribble = 25;
+      weights.lose_possession = 14;
     }
 
     // Adjust based on tactics
     if (tactic.mentality === 'attacking') {
-      weights.shoot *= 1.2;
-      weights.dribble *= 1.1;
+      weights.shoot *= 1.15;
+      weights.dribble *= 1.05;
     } else if (tactic.mentality === 'defensive') {
-      weights.pass *= 1.2;
+      weights.pass *= 1.15;
       weights.shoot *= 0.8;
     }
 
     if (tactic.tempo === 'fast') {
-      weights.dribble *= 1.1;
+      weights.dribble *= 1.05;
     }
 
     // Adjust based on player skills
     if (player.player.technical.shooting > 15) {
-      weights.shoot *= 1.15;
+      weights.shoot *= 1.1;
     }
     if (player.player.technical.dribbling > 15) {
-      weights.dribble *= 1.15;
+      weights.dribble *= 1.1;
     }
 
     return weights;
   }
 
   private calculateShootChance(player: PlayerMatchState, tactic: Tactic): number {
-    let chance = 0.10;
+    let chance = 0.06;
 
     // Better shooters shoot more
-    chance += (player.player.technical.shooting - 10) * 0.008;
+    chance += (player.player.technical.shooting - 10) * 0.005;
 
     // Attacking mentality increases shooting
-    if (tactic.mentality === 'attacking') chance *= 1.2;
+    if (tactic.mentality === 'attacking') chance *= 1.15;
 
-    return Math.min(0.25, Math.max(0.05, chance));
+    return Math.min(0.15, Math.max(0.03, chance));
   }
 
   // Get average team strength for realistic scoring
@@ -998,12 +999,13 @@ export class MatchEngine {
 
     // Calculate goal chance for on-target shots
     // Stronger teams convert more, weaker teams convert less
-    const baseGoalChance = 0.12 + (strengthRatio - 0.5) * 0.15;
-    const shooterModifier = (shootingSkill - 10) * 0.008;
-    const gkModifier = (gkSkill - 10) * -0.015;
-    const staminaModifier = (shooter.stamina - 50) * 0.001;
+    // Reduced base chance for more realistic goal counts (futsal avg ~5-7 total goals)
+    const baseGoalChance = 0.08 + (strengthRatio - 0.5) * 0.10;
+    const shooterModifier = (shootingSkill - 10) * 0.006;
+    const gkModifier = (gkSkill - 10) * -0.012;
+    const staminaModifier = (shooter.stamina - 50) * 0.0008;
 
-    const goalChance = Math.max(0.05, Math.min(0.35, baseGoalChance + shooterModifier + gkModifier + staminaModifier));
+    const goalChance = Math.max(0.04, Math.min(0.25, baseGoalChance + shooterModifier + gkModifier + staminaModifier));
 
     const isGoal = Math.random() < goalChance;
 

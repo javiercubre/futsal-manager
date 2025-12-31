@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '@/store/gameStore';
 import { getTeamFixtures, getUpcomingFixtures, calculateStandings } from '@/engine/league/LeagueEngine';
-import type { Fixture, LeagueTable } from '@/types';
+import type { Fixture, LeagueTable, Player } from '@/types';
 
 export default function Dashboard() {
   const { t } = useTranslation();
@@ -67,19 +67,34 @@ export default function Dashboard() {
     });
   };
 
-  // Top scorers from squad (placeholder - in real implementation this would track goals)
+  // Top scorers from league - calculate from all teams in player's league
   const topScorers = useMemo(() => {
-    if (!playerTeam) return [];
-    return playerTeam.squad
-      .filter(p => p.position !== 'GK')
-      .sort((a, b) => b.currentAbility - a.currentAbility)
-      .slice(0, 3)
-      .map((p, i) => ({
-        name: p.name,
-        goals: Math.floor(Math.random() * 5) + (3 - i), // Placeholder
-        team: playerTeam.shortName,
+    if (!playerLeague) return [];
+
+    // Collect all players from all teams in the league
+    const allPlayers: { player: Player; teamName: string }[] = [];
+
+    for (const team of playerLeague.teams) {
+      const fullTeam = teams.find(t => t.id === team.id);
+      if (fullTeam?.squad) {
+        for (const player of fullTeam.squad) {
+          if (player.position !== 'GK') {
+            allPlayers.push({ player, teamName: fullTeam.shortName });
+          }
+        }
+      }
+    }
+
+    // Sort by actual goals scored and take top 5
+    return allPlayers
+      .sort((a, b) => (b.player.seasonStats?.goals || 0) - (a.player.seasonStats?.goals || 0))
+      .slice(0, 5)
+      .map(({ player, teamName }) => ({
+        name: player.name,
+        goals: player.seasonStats?.goals || 0,
+        team: teamName,
       }));
-  }, [playerTeam]);
+  }, [playerLeague, teams]);
 
   return (
     <div className="space-y-6">

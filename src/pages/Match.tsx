@@ -112,7 +112,7 @@ export default function MatchView() {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const { playerTeam, teams, competitions, updateFixtureResult, advanceDay } = useGameStore();
+  const { playerTeam, teams, competitions, updateFixtureResult, updatePlayerSeasonStats, advanceDay } = useGameStore();
 
   // Get fixture from route state if navigating from calendar
   const routeFixture = location.state?.fixture as Fixture | undefined;
@@ -138,7 +138,7 @@ export default function MatchView() {
   const [resultSaved, setResultSaved] = useState(false);
   const [currentFixture, setCurrentFixture] = useState<Fixture | null>(routeFixture || null);
 
-  // Save match result when match ends
+  // Save match result and player stats when match ends
   useEffect(() => {
     if (matchState?.isFullTime && !resultSaved && currentFixture) {
       // Find the competition this fixture belongs to
@@ -153,10 +153,24 @@ export default function MatchView() {
           matchState.homeGoals,
           matchState.awayGoals
         );
+
+        // Update player stats for both teams
+        const allPlayers = [...matchState.home.players, ...matchState.away.players];
+        for (const playerState of allPlayers) {
+          // Update if player scored, assisted, or played
+          if (playerState.goals > 0 || playerState.assists > 0 || playerState.minutesPlayed > 0) {
+            updatePlayerSeasonStats(playerState.playerId, {
+              goals: playerState.goals,
+              assists: playerState.assists,
+              appearances: playerState.minutesPlayed > 0 ? 1 : 0,
+            });
+          }
+        }
+
         setResultSaved(true);
       }
     }
-  }, [matchState?.isFullTime, resultSaved, currentFixture, competitions, updateFixtureResult, matchState?.homeGoals, matchState?.awayGoals]);
+  }, [matchState?.isFullTime, resultSaved, currentFixture, competitions, updateFixtureResult, updatePlayerSeasonStats, matchState?.homeGoals, matchState?.awayGoals, matchState?.home.players, matchState?.away.players]);
 
   // Simulation loop
   useEffect(() => {
@@ -456,9 +470,9 @@ export default function MatchView() {
               <button
                 onClick={() => callTimeout('home')}
                 className="btn btn-secondary text-sm"
-                disabled={isPlaying || (matchState?.home.timeoutsUsed || 0) >= 1}
+                disabled={!isPlaying || matchState?.isHalfTime || matchState?.isFullTime || (matchState?.home.timeoutsUsed || 0) >= 1}
               >
-                Timeout
+                Timeout ({1 - (matchState?.home.timeoutsUsed || 0)} left)
               </button>
             </div>
 

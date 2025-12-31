@@ -64,6 +64,7 @@ interface GameState {
   loadPlayers: (players: Player[]) => void;
   loadCompetitions: (competitions: Competition[]) => void;
   updateFixtureResult: (competitionId: string, matchId: string, homeGoals: number, awayGoals: number) => void;
+  updatePlayerSeasonStats: (playerId: string, stats: { goals?: number; assists?: number; appearances?: number }) => void;
   makeTransferOffer: (playerId: string, targetTeamId: string, fee: number) => void;
   acceptTransferOffer: (offerId: string) => void;
   rejectTransferOffer: (offerId: string) => void;
@@ -256,6 +257,40 @@ export const useGameStore = create<GameState>()(
           };
         }),
       })),
+
+      updatePlayerSeasonStats: (playerId, stats) => set((state) => {
+        // Helper to update player in a squad
+        const updateSquadPlayer = (squad: Player[]): Player[] => {
+          return squad.map(p => {
+            if (p.id !== playerId) return p;
+            return {
+              ...p,
+              seasonStats: {
+                ...p.seasonStats,
+                goals: (p.seasonStats?.goals || 0) + (stats.goals || 0),
+                assists: (p.seasonStats?.assists || 0) + (stats.assists || 0),
+                appearances: (p.seasonStats?.appearances || 0) + (stats.appearances || 0),
+              },
+            };
+          });
+        };
+
+        // Update player in all teams
+        const updatedTeams = state.teams.map(team => ({
+          ...team,
+          squad: updateSquadPlayer(team.squad),
+        }));
+
+        // Update player team if applicable
+        const updatedPlayerTeam = state.playerTeam
+          ? { ...state.playerTeam, squad: updateSquadPlayer(state.playerTeam.squad) }
+          : null;
+
+        return {
+          teams: updatedTeams,
+          playerTeam: updatedPlayerTeam,
+        };
+      }),
 
       makeTransferOffer: (playerId, targetTeamId, fee) => {
         const state = get();
