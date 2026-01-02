@@ -45,9 +45,9 @@ export default function Table() {
 
   // Determine position zone colors
   const getPositionStyle = (position: number, totalTeams: number): string => {
-    // Top 4 - Champions League / Playoffs
+    // Top 4 - UEFA Futsal Champions League / Playoffs
     if (position <= 4) return 'border-l-4 border-green-500';
-    // 5-8 - Europa / Playoffs
+    // 5-8 - Playoffs
     if (position <= 8) return 'border-l-4 border-blue-500';
     // Bottom 2 - Relegation
     if (position > totalTeams - 2) return 'border-l-4 border-red-500';
@@ -209,11 +209,11 @@ export default function Table() {
         <div className="flex flex-wrap gap-6 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-green-500 rounded" />
-            <span className="text-slate-400">Playoffs / Champions League</span>
+            <span className="text-slate-400">UEFA Futsal Champions League / Playoffs</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-blue-500 rounded" />
-            <span className="text-slate-400">Playoffs / Europa League</span>
+            <span className="text-slate-400">Playoffs</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-red-500 rounded" />
