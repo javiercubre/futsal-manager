@@ -1110,6 +1110,13 @@ export class MatchEngine {
       const team = this.state[side];
       const isHome = side === 'home';
       const isAttacking = possessionTeam === side;
+      const tactic = team.tactic;
+
+      // Tactical modifiers
+      const mentalityMod = this.getMentalityModifier(tactic.mentality);
+      const widthMod = (tactic.width - 10) / 10; // -1 to 1 scale
+      const defenseLineMod = (tactic.defenseLine - 10) / 10; // -1 to 1 scale
+      const pressingMod = this.getPressingModifier(tactic.pressing);
 
       team.players.forEach(player => {
         if (!player.isOnCourt) return;
@@ -1136,9 +1143,18 @@ export class MatchEngine {
           // Defensive pivot - stays back
           baseX = isHome ? 25 : 75;
           baseY = 50;
+
+          // Apply defensive line modifier - higher line = more advanced position
+          baseX += (isHome ? 1 : -1) * defenseLineMod * 8;
+
           // Move slightly with ball but stay defensive
           if (isAttacking) {
             baseX = isHome ? 35 : 65;
+            // Attacking mentality pushes FIXO higher
+            baseX += (isHome ? 1 : -1) * mentalityMod * 8;
+          } else {
+            // When defending, pressing affects how high to press
+            baseX += (isHome ? 1 : -1) * pressingMod * 5;
           }
         } else if (position === 'ALA') {
           // Wingers - spread wide on flanks
@@ -1146,16 +1162,29 @@ export class MatchEngine {
           const isLeftWing = player.targetPosition.y < 50;
           baseY = isLeftWing ? 20 : 80;
 
+          // Apply width modifier - wider tactics = more spread out
+          const wingSpread = 30 + widthMod * 15;
+          baseY = 50 + (isLeftWing ? -wingSpread : wingSpread);
+
           // Move up and down the flank based on ball position
           baseX = isHome ? 45 : 55;
           if (isAttacking) {
             baseX = isHome ? 60 : 40;
+            // Attacking mentality pushes wingers higher
+            baseX += (isHome ? 1 : -1) * mentalityMod * 10;
+          } else {
+            // When defending, pressing affects how high wingers stay
+            baseX += (isHome ? 1 : -1) * pressingMod * 8;
+            // Defensive mentality brings wingers back more
+            baseX += (isHome ? -1 : 1) * mentalityMod * 6;
           }
 
           // Move closer to ball Y position when in same half
           const sameHalf = isHome ? ballX > 30 : ballX < 70;
           if (sameHalf) {
-            baseY = baseY * 0.6 + ballY * 0.4;
+            // Narrow formations pinch in more towards ball
+            const pinchFactor = 0.4 - widthMod * 0.15;
+            baseY = baseY * (1 - pinchFactor) + ballY * pinchFactor;
           }
         } else if (position === 'PIVO') {
           // Forward/striker - stays high
@@ -1164,11 +1193,16 @@ export class MatchEngine {
 
           if (isAttacking) {
             baseX = isHome ? 80 : 20;
+            // Attacking mentality pushes striker even higher
+            baseX += (isHome ? 1 : -1) * mentalityMod * 8;
             // Move towards ball Y for better positioning
             baseY = 50 + (ballY - 50) * 0.3;
           } else {
-            // Drop back when defending
-            baseX = isHome ? 50 : 50;
+            // Drop back when defending based on mentality
+            const dropBackAmount = 20 - mentalityMod * 10;
+            baseX = isHome ? 50 + dropBackAmount : 50 - dropBackAmount;
+            // High pressing keeps striker higher even when not attacking
+            baseX += (isHome ? 1 : -1) * pressingMod * 10;
           }
         } else {
           // Default positioning for unrecognized positions
@@ -1177,22 +1211,43 @@ export class MatchEngine {
         }
 
         // Add some positional variation based on tactics and individual movement
-        const randomX = (Math.random() - 0.5) * 15;
-        const randomY = (Math.random() - 0.5) * 15;
+        // Fast tempo = more dynamic movement
+        const tempoFactor = tactic.tempo === 'fast' ? 1.3 : tactic.tempo === 'slow' ? 0.7 : 1.0;
+        const randomX = (Math.random() - 0.5) * 15 * tempoFactor;
+        const randomY = (Math.random() - 0.5) * 15 * tempoFactor;
 
         // Calculate target position
         const targetX = Math.max(10, Math.min(90, baseX + randomX));
         const targetY = Math.max(10, Math.min(90, baseY + randomY));
 
-        // Smooth movement - move 15% towards target each tick for more fluid motion
-        player.position.x += (targetX - player.position.x) * 0.15;
-        player.position.y += (targetY - player.position.y) * 0.15;
+        // Smooth movement - faster tempo = quicker position changes
+        const movementSpeed = 0.15 * tempoFactor;
+        player.position.x += (targetX - player.position.x) * movementSpeed;
+        player.position.y += (targetY - player.position.y) * movementSpeed;
 
         // Clamp final position
         player.position.x = Math.max(5, Math.min(95, player.position.x));
         player.position.y = Math.max(10, Math.min(90, player.position.y));
       });
     });
+  }
+
+  // Helper method to get mentality modifier
+  private getMentalityModifier(mentality: 'attacking' | 'balanced' | 'defensive'): number {
+    switch (mentality) {
+      case 'attacking': return 1;
+      case 'defensive': return -1;
+      default: return 0;
+    }
+  }
+
+  // Helper method to get pressing modifier
+  private getPressingModifier(pressing: 'high' | 'medium' | 'low'): number {
+    switch (pressing) {
+      case 'high': return 1;
+      case 'low': return -1;
+      default: return 0;
+    }
   }
 
   private updatePossessionStats(): void {
