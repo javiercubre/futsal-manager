@@ -1103,6 +1103,7 @@ export class MatchEngine {
   // Update player positions - goalkeepers stay near goal, outfield players move around
   private updatePlayerPositions(): void {
     const ballX = this.state.ball.position.x;
+    const ballY = this.state.ball.position.y;
     const possessionTeam = this.state.ball.possessionTeam;
 
     (['home', 'away'] as const).forEach(side => {
@@ -1125,26 +1126,71 @@ export class MatchEngine {
           return;
         }
 
-        // Outfield players move based on ball position and possession
-        const baseX = isHome
-          ? (isAttacking ? 30 + ballX * 0.5 : 20 + ballX * 0.4)
-          : (isAttacking ? 70 - (100 - ballX) * 0.5 : 80 - (100 - ballX) * 0.4);
+        // Get player's tactical position for proper spacing
+        const position = player.player.position;
+        let baseX: number;
+        let baseY: number;
 
-        // Add randomness to movement
-        const randomX = (Math.random() - 0.5) * 25;
-        const randomY = (Math.random() - 0.5) * 40;
+        // Calculate base position based on player role and game phase
+        if (position === 'FIXO') {
+          // Defensive pivot - stays back
+          baseX = isHome ? 25 : 75;
+          baseY = 50;
+          // Move slightly with ball but stay defensive
+          if (isAttacking) {
+            baseX = isHome ? 35 : 65;
+          }
+        } else if (position === 'ALA') {
+          // Wingers - spread wide on flanks
+          // Determine which flank based on initial Y position
+          const isLeftWing = player.targetPosition.y < 50;
+          baseY = isLeftWing ? 20 : 80;
 
-        // Move towards target position gradually
+          // Move up and down the flank based on ball position
+          baseX = isHome ? 45 : 55;
+          if (isAttacking) {
+            baseX = isHome ? 60 : 40;
+          }
+
+          // Move closer to ball Y position when in same half
+          const sameHalf = isHome ? ballX > 30 : ballX < 70;
+          if (sameHalf) {
+            baseY = baseY * 0.6 + ballY * 0.4;
+          }
+        } else if (position === 'PIVO') {
+          // Forward/striker - stays high
+          baseX = isHome ? 70 : 30;
+          baseY = 50;
+
+          if (isAttacking) {
+            baseX = isHome ? 80 : 20;
+            // Move towards ball Y for better positioning
+            baseY = 50 + (ballY - 50) * 0.3;
+          } else {
+            // Drop back when defending
+            baseX = isHome ? 50 : 50;
+          }
+        } else {
+          // Default positioning for unrecognized positions
+          baseX = isHome ? 50 : 50;
+          baseY = 50;
+        }
+
+        // Add some positional variation based on tactics and individual movement
+        const randomX = (Math.random() - 0.5) * 15;
+        const randomY = (Math.random() - 0.5) * 15;
+
+        // Calculate target position
         const targetX = Math.max(10, Math.min(90, baseX + randomX));
-        const targetY = Math.max(10, Math.min(90, 50 + randomY));
+        const targetY = Math.max(10, Math.min(90, baseY + randomY));
 
-        // Smooth movement - move 20% towards target each tick
-        player.position.x += (targetX - player.position.x) * 0.2;
-        player.position.y += (targetY - player.position.y) * 0.2;
+        // Smooth movement - move 15% towards target each tick for more fluid motion
+        player.position.x += (targetX - player.position.x) * 0.15;
+        player.position.y += (targetY - player.position.y) * 0.15;
 
         // Clamp final position
         player.position.x = Math.max(5, Math.min(95, player.position.x));
-        player.position.y = Math.max(5, Math.min(95, player.position.y));
+        player.position.y = Math.max(10, Math.min(90, player.position.y));
       });
     });
   }
